@@ -1,15 +1,27 @@
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy import Column, Integer, String
+import sqlalchemy
+from db import db, metadata
 
-Base = declarative_base()
 
-class User(Base):
-    __tablename__ = "users"
-    id = Column(Integer, primary_key=True, index=True)
-    first_name = Column(String,)
-    last_name = Column(String)
-    email = Column(String)
-    hashed_password = Column(String)
+users = sqlalchemy.Table(
+    "users",
+    metadata,
+    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
+    sqlalchemy.Column("first_name", sqlalchemy.String),
+    sqlalchemy.Column("last_name", sqlalchemy.String),
+    sqlalchemy.Column("email", sqlalchemy.String, unique=True),
+    sqlalchemy.Column("hashed_password", sqlalchemy.String),
+)
 
-    def __str__(self) -> str:
-        return self.first_name + " " + self.last_name
+
+class User:
+    @classmethod
+    async def get(cls, email):
+        query = users.select().where(users.c.email==email)
+        user = await db.fetch_one(query)
+        return user
+
+    @classmethod
+    async def create(cls, **user):
+        query = users.insert().values(**user)
+        user_id = await db.execute(query)
+        return user_id
