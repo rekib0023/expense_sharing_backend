@@ -3,7 +3,6 @@ from fastapi.security import OAuth2PasswordRequestForm
 
 from app.schemas import UserOut, UserAuth, TokenSchema, SystemUser
 from app.models import User
-from db import db
 from app.utils import (
     get_hashed_password,
     create_access_token,
@@ -14,11 +13,10 @@ from app.utils import (
 from app.dependency import get_current_user
 
 
-
 router = APIRouter()
 
 
-@router.post('/signup', summary="Create new user", response_model=TokenSchema)
+@router.post('/signup', summary="Create new user", status_code=status.HTTP_201_CREATED, response_model=TokenSchema)
 async def create_user(data: UserAuth):
     user = await User.get(data.email)
     if user is not None:
@@ -40,8 +38,7 @@ async def create_user(data: UserAuth):
         "refresh_token": create_refresh_token(user['email']),
     }
 
-
-@router.post('/login', summary="Create access and refresh tokens for user", response_model=TokenSchema)
+@router.post('/login', summary="Create access and refresh tokens for user", status_code=status.HTTP_200_OK, response_model=TokenSchema)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
     user = await User.get(form_data.username)
     if user is None:
@@ -62,6 +59,6 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         "refresh_token": create_refresh_token(user['email']),
     }
 
-@router.get('/me', summary='Get details of currently logged in user', response_model=UserOut)
+@router.get('/me', summary='Get details of currently logged in user', status_code=status.HTTP_200_OK, response_model=UserOut)
 async def get_me(user: SystemUser = Depends(get_current_user)):
     return user

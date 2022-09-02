@@ -15,7 +15,6 @@ ALGORITHM = "HS256"
 JWT_SECRET_KEY = os.environ["JWT_SECRET_KEY"]
 JWT_REFRESH_SECRET_KEY = os.environ["JWT_REFRESH_SECRET_KEY"]
 
-print(JWT_SECRET_KEY)
 
 password_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 

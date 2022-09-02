@@ -11,7 +11,6 @@ from jose import jwt
 from pydantic import ValidationError
 from app.schemas import TokenPayload, SystemUser
 from app.models import User
-# from replit import db
 
 reuseable_oauth = OAuth2PasswordBearer(
     tokenUrl="/api/login",
