@@ -11,11 +11,14 @@ from jose import jwt
 from pydantic import ValidationError
 from app.schemas import TokenPayload, SystemUser
 from app.models import User
+from db import SessionLocal
 
 reuseable_oauth = OAuth2PasswordBearer(
     tokenUrl="/api/login",
     scheme_name="JWT"
 )
+
+
 
 
 async def get_current_user(token: str = Depends(reuseable_oauth)) -> SystemUser:
@@ -38,7 +41,7 @@ async def get_current_user(token: str = Depends(reuseable_oauth)) -> SystemUser:
             headers={"WWW-Authenticate": "Bearer"},
         )
         
-    user: Union[dict[str, Any], None] = await User.get(token_data.sub)
+    user: Union[dict[str, Any], None] = User.get_by(email=token_data.sub)
     
     
     if user is None:
@@ -47,4 +50,4 @@ async def get_current_user(token: str = Depends(reuseable_oauth)) -> SystemUser:
             detail="Could not find user",
         )
     
-    return SystemUser(**user)
+    return SystemUser(**user.as_dict())

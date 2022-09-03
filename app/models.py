@@ -1,27 +1,25 @@
-import sqlalchemy
-from db import db, metadata
+from sqlalchemy import Column, Integer, String
+from sqlalchemy.ext.declarative import declared_attr, declarative_base
+from app.mixins import AuditMixin, BaseMixin
 
 
-users = sqlalchemy.Table(
-    "users",
-    metadata,
-    sqlalchemy.Column("id", sqlalchemy.Integer, primary_key=True),
-    sqlalchemy.Column("first_name", sqlalchemy.String),
-    sqlalchemy.Column("last_name", sqlalchemy.String),
-    sqlalchemy.Column("email", sqlalchemy.String, unique=True),
-    sqlalchemy.Column("hashed_password", sqlalchemy.String),
-)
+class Base(object):
+    @declared_attr
+    def __tablename__(cls):
+        return cls.__name__.lower()
+
+    def as_dict(self):
+       return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+
+    id =  Column(Integer, primary_key=True)
 
 
-class User:
-    @classmethod
-    async def get(cls, email):
-        query = users.select().where(users.c.email==email)
-        user = await db.fetch_one(query)
-        return user
+Base = declarative_base(cls=Base)
+metadata = Base.metadata
 
-    @classmethod
-    async def create(cls, **user):
-        query = users.insert().values(**user)
-        user_id = await db.execute(query)
-        return user_id
+
+class User(Base, AuditMixin, BaseMixin):
+    first_name = Column(String)
+    last_name = Column(String)
+    email = Column(String, unique=True)
+    hashed_password = Column(String)

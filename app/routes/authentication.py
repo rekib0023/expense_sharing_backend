@@ -18,7 +18,7 @@ router = APIRouter()
 
 @router.post('/signup', summary="Create new user", status_code=status.HTTP_201_CREATED, response_model=TokenSchema)
 async def create_user(data: UserAuth):
-    user = await User.get(data.email)
+    user = User.get_by(email=data.email)
     if user is not None:
             raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -31,7 +31,7 @@ async def create_user(data: UserAuth):
         'hashed_password': get_hashed_password(data.password),
     }
     
-    _ = await User.create(**user)
+    _ = User.create(**user)
 
     return {
         "access_token": create_access_token(user['email']),
@@ -40,14 +40,14 @@ async def create_user(data: UserAuth):
 
 @router.post('/login', summary="Create access and refresh tokens for user", status_code=status.HTTP_200_OK, response_model=TokenSchema)
 async def login(form_data: OAuth2PasswordRequestForm = Depends()):
-    user = await User.get(form_data.username)
+    user = User.get_by(email=form_data.username)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Incorrect email or password"
         )
 
-    hashed_pass = user['hashed_password']
+    hashed_pass = user.hashed_password
     if not verify_password(form_data.password, hashed_pass):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -55,8 +55,8 @@ async def login(form_data: OAuth2PasswordRequestForm = Depends()):
         )
     
     return {
-        "access_token": create_access_token(user['email']),
-        "refresh_token": create_refresh_token(user['email']),
+        "access_token": create_access_token(user.email),
+        "refresh_token": create_refresh_token(user.email),
     }
 
 @router.get('/me', summary='Get details of currently logged in user', status_code=status.HTTP_200_OK, response_model=UserOut)
