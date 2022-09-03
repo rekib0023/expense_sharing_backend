@@ -1,24 +1,12 @@
 from datetime import timedelta
-from typing import Optional
 
-from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
-from fastapi.security import OAuth2PasswordRequestForm
+from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import EmailStr
 
-# from app.schemas import SystemUser, UserAuth, UserOut, UserSchema
 from app import oauth2, schemas, utils
 from app.config import settings
-
-# from app.dependency import get_current_user
 from app.models import User
 from app.oauth2 import AuthJWT
-
-# from app.utils import (
-#     create_access_token,
-#     create_refresh_token,
-#     get_hashed_password,
-#     verify_password,
-# )
 
 router = APIRouter()
 ACCESS_TOKEN_EXPIRES_IN = settings.ACCESS_TOKEN_EXPIRES_IN
