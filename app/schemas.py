@@ -24,4 +24,4 @@ class LoginUserSchema(BaseModel):
 class UserResponse(UserBaseSchema):
     id: int
     created_at: datetime
-    updated_at: datetime
+    updated_at: datetime = None

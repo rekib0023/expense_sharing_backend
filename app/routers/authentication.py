@@ -217,13 +217,3 @@ def logout(
     response.set_cookie("logged_in", "", -1)
 
     return {"status": "success"}
-
-
-# @router.get(
-#     "/me",
-#     summary="Get details of currently logged in user",
-#     status_code=status.HTTP_200_OK,
-#     response_model=UserOut,
-# )
-# async def get_me(user: SystemUser = Depends(get_current_user)):
-#     return user

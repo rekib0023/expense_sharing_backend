@@ -37,9 +37,6 @@ def require_user(Authorize: AuthJWT = Depends()):
         if not user:
             raise HTTPException("User no longer exist")
 
-        if not user.verified:
-            raise HTTPException("You are not verified")
-
     except Exception as e:
         error = e.__class__.__name__
         print(error)
@@ -60,4 +57,4 @@ def require_user(Authorize: AuthJWT = Depends()):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token is invalid or has expired",
         )
-    return
+    return user_email
