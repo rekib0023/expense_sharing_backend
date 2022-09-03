@@ -1,10 +1,11 @@
 import uvicorn
 from fastapi import FastAPI
 from fastapi.responses import RedirectResponse
+from sqlalchemy.orm import Session as db
+from sqlalchemy.orm import close_all_sessions
 
-from sqlalchemy.orm import Session as db, close_all_sessions
-from app.routes import authentication
 from app import models
+from app.routes import authentication
 from db import engine
 
 models.Base.metadata.create_all(bind=engine)
@@ -14,8 +15,6 @@ app = FastAPI()
 
 
 app.include_router(authentication.router, prefix="/api")
-
-
 
 
 @app.get("/", response_class=RedirectResponse, include_in_schema=False)

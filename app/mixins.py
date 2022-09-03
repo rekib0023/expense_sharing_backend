@@ -1,13 +1,14 @@
-from sqlalchemy import Column, Integer, DateTime, ForeignKey
-from sqlalchemy.sql import func
-from sqlalchemy.orm import relationship
+from fastapi import HTTPException
+from sqlalchemy import Column, DateTime, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declared_attr
+from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
+
 # from app.dependency import get_current_user\\
 from db import get_db
-from fastapi import HTTPException
-
 
 db = next(get_db())
+
 
 class AuditMixin(object):
     created_at = Column(DateTime(timezone=True), default=func.now())
@@ -47,10 +48,8 @@ class AuditMixin(object):
     #     )
 
 
-
-
 class BaseMixin(object):
-    _repr_hide = ['created_at', 'updated_at']
+    _repr_hide = ["created_at", "updated_at"]
 
     @classmethod
     def query(cls):
@@ -68,7 +67,9 @@ class BaseMixin(object):
     def get_or_404(cls, id):
         rv = cls.get(id)
         if rv is None:
-            raise HTTPException(status_code=404, detail=f"Item {cls.__name__} not found")
+            raise HTTPException(
+                status_code=404, detail=f"Item {cls.__name__} not found"
+            )
         return rv
 
     @classmethod
@@ -101,7 +102,11 @@ class BaseMixin(object):
         db.refresh(self)
 
     def __repr__(self):
-        values = ', '.join("%s=%r" % (n, getattr(self, n)) for n in self.__table__.c.keys() if n not in self._repr_hide)
+        values = ", ".join(
+            "%s=%r" % (n, getattr(self, n))
+            for n in self.__table__.c.keys()
+            if n not in self._repr_hide
+        )
         return "%s(%s)" % (self.__class__.__name__, values)
 
     def filter_string(self):

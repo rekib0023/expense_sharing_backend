@@ -1,5 +1,6 @@
 from sqlalchemy import Column, Integer, String
-from sqlalchemy.ext.declarative import declared_attr, declarative_base
+from sqlalchemy.ext.declarative import declarative_base, declared_attr
+
 from app.mixins import AuditMixin, BaseMixin
 
 
@@ -9,9 +10,9 @@ class Base(object):
         return cls.__name__.lower()
 
     def as_dict(self):
-       return {c.name: getattr(self, c.name) for c in self.__table__.columns}
+        return {c.name: getattr(self, c.name) for c in self.__table__.columns}
 
-    id =  Column(Integer, primary_key=True)
+    id = Column(Integer, primary_key=True)
 
 
 Base = declarative_base(cls=Base)
