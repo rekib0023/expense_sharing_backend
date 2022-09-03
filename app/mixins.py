@@ -79,7 +79,7 @@ class BaseMixin(object):
             r = cls(**kw)
             db.add(r)
             db.commit()
-            db.refresh(cls)
+            db.refresh(r)
 
         return r
 
@@ -88,18 +88,16 @@ class BaseMixin(object):
         r = cls(**kw)
         db.add(r)
         db.commit()
-        db.refresh(cls)
+        db.refresh(r)
         return r
 
     def save(self):
         db.add(self)
         db.commit()
-        db.refresh(self)
 
     def delete(self):
         db.delete(self)
         db.commit()
-        db.refresh(self)
 
     def __repr__(self):
         values = ", ".join(
