@@ -1,5 +1,6 @@
 import uvicorn
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from app import models
@@ -11,10 +12,21 @@ models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app.include_router(authentication.router, tags=["Auth"], prefix="/api/auth")
 app.include_router(user.router, tags=["User"], prefix="/api/user")
-
 
 
 @app.get("/api/healthchecker")
@@ -23,7 +35,7 @@ def root():
 
 
 @app.get("/", response_class=RedirectResponse, include_in_schema=False)
-async def docs():
+def docs():
     return RedirectResponse(url="/docs")
 
 

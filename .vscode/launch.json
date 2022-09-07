@@ -11,7 +11,7 @@
             "program": "main.py",
             "console": "integratedTerminal",
             "jinja": true,
-            "justMyCode": true
+            "justMyCode": false
         }
     ]
 }

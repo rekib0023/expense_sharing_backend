@@ -18,7 +18,7 @@ REFRESH_TOKEN_EXPIRES_IN = settings.REFRESH_TOKEN_EXPIRES_IN
     summary="Create new user",
     status_code=status.HTTP_201_CREATED,
 )
-async def create_user(
+def create_user(
     payload: schemas.CreateUserSchema,
     response: Response,
     Authorize: AuthJWT = Depends(),
@@ -26,7 +26,7 @@ async def create_user(
     user = User.get_by(email=EmailStr(payload.email.lower()))
     if user is not None:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
+            status_code=status.HTTP_409_CONFLICT,
             detail="User with this email already exist",
         )
     user = {
@@ -83,7 +83,7 @@ async def create_user(
     summary="Create access and refresh tokens for user",
     status_code=status.HTTP_200_OK,
 )
-async def login(
+def login(
     payload: schemas.LoginUserSchema, response: Response, Authorize: AuthJWT = Depends()
 ):
     user = User.get_by(email=payload.email)
