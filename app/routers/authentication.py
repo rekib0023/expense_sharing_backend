@@ -1,7 +1,6 @@
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from pydantic import EmailStr
 
 from app import oauth2, schemas, utils
 from app.config import settings
@@ -23,7 +22,7 @@ def create_user(
     response: Response,
     Authorize: AuthJWT = Depends(),
 ):
-    user = User.get_by(email=EmailStr(payload.email.lower()))
+    user = User.get_by(email=payload.email.lower())
     if user is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -96,8 +95,7 @@ def login(
     hashed_pass = user.hashed_password
     if not utils.verify_password(payload.password, hashed_pass):
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Incorrect email or password",
+            status_code=status.HTTP_401_UNAUTHORIZED,
         )
 
     access_token = Authorize.create_access_token(
@@ -151,13 +149,13 @@ def refresh_token(response: Response, request: Request, Authorize: AuthJWT = Dep
         user_email = Authorize.get_jwt_subject()
         if not user_email:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="Could not refresh access token",
             )
         user = User.get_by(email=user_email)
         if not user:
             raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
+                status_code=status.HTTP_403_FORBIDDEN,
                 detail="The user belonging to this token no logger exist",
             )
         access_token = Authorize.create_access_token(
