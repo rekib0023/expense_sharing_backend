@@ -38,11 +38,11 @@ def create_user(
     user = User.create(**user)
 
     access_token = Authorize.create_access_token(
-        subject=str(user.email), expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN)
+        subject=str(user.id), expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN)
     )
 
     refresh_token = Authorize.create_refresh_token(
-        subject=str(user.email),
+        subject=str(user.id),
         expires_time=timedelta(minutes=REFRESH_TOKEN_EXPIRES_IN),
     )
 
