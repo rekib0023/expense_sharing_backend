@@ -99,11 +99,11 @@ def login(
         )
 
     access_token = Authorize.create_access_token(
-        subject=str(user.email), expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN)
+        subject=str(user.id), expires_time=timedelta(minutes=ACCESS_TOKEN_EXPIRES_IN)
     )
 
     refresh_token = Authorize.create_refresh_token(
-        subject=str(user.email),
+        subject=str(user.id),
         expires_time=timedelta(minutes=REFRESH_TOKEN_EXPIRES_IN),
     )
 
@@ -146,13 +146,13 @@ def refresh_token(response: Response, request: Request, Authorize: AuthJWT = Dep
         print(Authorize._refresh_cookie_key)
         Authorize.jwt_refresh_token_required()
 
-        user_email = Authorize.get_jwt_subject()
-        if not user_email:
+        user_id = Authorize.get_jwt_subject()
+        if not user_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Could not refresh access token",
             )
-        user = User.get_by(email=user_email)
+        user = User.get(user_id)
         if not user:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -209,7 +209,7 @@ def refresh_token(response: Response, request: Request, Authorize: AuthJWT = Dep
 def logout(
     response: Response,
     Authorize: AuthJWT = Depends(),
-    user_email: str = Depends(oauth2.require_user),
+    _: str = Depends(oauth2.require_user),
 ):
     Authorize.unset_jwt_cookies()
     response.set_cookie("logged_in", "", -1)

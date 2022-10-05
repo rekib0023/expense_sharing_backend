@@ -30,16 +30,15 @@ def get_config():
 def require_user(Authorize: AuthJWT = Depends()):
     try:
         Authorize.jwt_required()
-        user_email = Authorize.get_jwt_subject()
+        user_id = Authorize.get_jwt_subject()
 
-        user = User.get_by(email=user_email)
+        user = User.get(user_id)
 
         if not user:
             raise HTTPException("User no longer exist")
 
     except Exception as e:
         error = e.__class__.__name__
-        print(error)
         if error == "MissingTokenError":
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="You are not logged in"
@@ -57,4 +56,4 @@ def require_user(Authorize: AuthJWT = Depends()):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token is invalid or has expired",
         )
-    return user_email
+    return user_id
