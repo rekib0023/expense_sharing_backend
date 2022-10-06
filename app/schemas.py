@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List, Literal
 
 from pydantic import BaseModel, EmailStr, constr
 
@@ -25,3 +26,29 @@ class UserResponse(UserBaseSchema):
     id: int
     created_at: datetime
     updated_at: datetime = None
+
+
+class CreateExpenseCategory(BaseModel):
+    name: str
+
+
+class ExpenseCategory(CreateExpenseCategory):
+    id: int
+
+    class Config:
+        orm_mode = True
+
+
+class ExpenseBase(BaseModel):
+    name: str
+    type: Literal["Bank", "Card", "Cash"]
+    amount: float
+
+
+class CreateExpense(ExpenseBase):
+    category_id: int
+
+
+class Expense(ExpenseBase):
+    id: int
+    category: ExpenseCategory

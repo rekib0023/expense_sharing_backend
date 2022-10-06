@@ -1,10 +1,11 @@
-from sqlalchemy import Column, Integer, Float, String, Enum, ForeignKey
-from sqlalchemy.orm import relationship
+import enum
+
+from sqlalchemy import Column, Enum, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
+from sqlalchemy.orm import relationship
 
 from app.mixins import AuditMixin, BaseMixin
 
-import enum
 
 class Base(object):
     @declared_attr
@@ -27,19 +28,23 @@ class User(Base, AuditMixin, BaseMixin):
     email = Column(String, unique=True)
     hashed_password = Column(String)
 
+
 class ExpenseCategory(Base, AuditMixin, BaseMixin):
     name = Column(String, nullable=False)
 
 
 class PaymentTypeEnum(enum.Enum):
-    bank = 'Bank'
-    card = 'Card'
-    cash = 'Cash'
+    Bank = "Bank"
+    Card = "Card"
+    Cash = "Cash"
+
 
 class Expense(Base, AuditMixin, BaseMixin):
     name = Column(String, nullable=False)
-    type = Column(Enum(PaymentTypeEnum), default=PaymentTypeEnum.cash, nullable=False)
+    type = Column(Enum(PaymentTypeEnum), default=PaymentTypeEnum.Cash, nullable=False)
     amount = Column(Float, default=0.0)
     category_id = Column(Integer, ForeignKey(ExpenseCategory.id))
 
-    category = relationship('ExpenseCategory', foreign_keys="Expense.category_id", lazy="joined")
+    category = relationship(
+        "ExpenseCategory", foreign_keys="Expense.category_id", lazy="joined"
+    )

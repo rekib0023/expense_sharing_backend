@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import RedirectResponse
 
 from app import models
-from app.routers import authentication, user
+from app.routers import authentication, expense, user
 from db import engine
 
 models.Base.metadata.create_all(bind=engine)
@@ -27,6 +27,7 @@ app.add_middleware(
 
 app.include_router(authentication.router, tags=["Auth"], prefix="/api/auth")
 app.include_router(user.router, tags=["User"], prefix="/api/user")
+app.include_router(expense.router, tags=["Expense"], prefix="/api/expense")
 
 
 @app.get("/api/healthchecker")

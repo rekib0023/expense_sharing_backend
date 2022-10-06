@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
 
 from .. import models, oauth2, schemas
 
@@ -15,7 +14,5 @@ def get_me(user_id: str = Depends(oauth2.require_user)):
 @router.get("/all")
 def get_all(_: str = Depends(oauth2.require_user)):
     users = models.User.query().all()
-    user_list = [
-        schemas.UserResponse(**user.as_dict()) for user in users
-    ]
+    user_list = [schemas.UserResponse(**user.as_dict()) for user in users]
     return user_list
