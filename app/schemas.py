@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import List, Literal
+from typing import List, Literal, Union
 
 from pydantic import BaseModel, EmailStr, constr
 
@@ -52,3 +52,12 @@ class CreateExpense(ExpenseBase):
 class Expense(ExpenseBase):
     id: int
     category: ExpenseCategory
+
+
+class ExpenseGroup(BaseModel):
+    id: int
+    name: str
+    amount: float
+    category: Union[ExpenseCategory, None]
+    type: Union[str, None]
+    # __root__: Union[str, ExpenseCategory]

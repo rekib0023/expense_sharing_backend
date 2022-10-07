@@ -1,4 +1,5 @@
-from typing import List
+from typing import Dict, List, Union
+from sqlalchemy import and_
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
@@ -67,7 +68,6 @@ def create_expense(
     payload: schemas.CreateExpense, _: str = Depends(oauth2.require_user)
 ):
     try:
-        print(payload)
         expense = models.Expense.create(**payload.dict())
     except Exception as e:
         raise HTTPException(
@@ -82,15 +82,84 @@ def create_expense(
     status_code=status.HTTP_200_OK,
     response_model=List[schemas.Expense],
 )
-def get_expenses(_: str = Depends(oauth2.require_user)):
+def get_expenses(
+    type: Union[str, None] = None,
+    value: Union[str, None] = None,
+    amount_gt: Union[int, None] = None,
+    amount_lt: Union[int, None] = None,
+    _: str = Depends(oauth2.require_user),
+):
+    if type and type not in ["category", "type"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid filter type. Must be of category, type.",
+        )
+    filters = []
+
+    if type == "category":
+        category = models.ExpenseCategory.get_by(name=value)
+        if category:
+            category_id = category.id
+        else:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="No category found for the given filter",
+            )
+        filters.append(models.Expense.category_id == category_id)
+    elif type == "type":
+        filters.append(models.Expense.type == value)
+
+    if amount_gt and amount_lt:
+        filters.append(models.Expense.amount >= amount_gt)
+        filters.append(models.Expense.amount <= amount_lt)
+    elif amount_gt:
+        filters.append(models.Expense.amount >= amount_gt)
+    elif amount_lt:
+        filters.append(models.Expense.amount <= amount_lt)
+
     try:
-        expenses = models.Expense.query().all()
+        if filters:
+            expenses = models.Expense.query().filter(and_(el for el in filters))
+        else:
+            expenses = models.Expense.query().all()
+
         expenses = [jsonable_encoder(e) for e in expenses]
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
         )
     return expenses
+
+
+@router.get(
+    "/group",
+    summary="Get expenses in group",
+    status_code=status.HTTP_200_OK,
+    response_model=Dict[str, List[schemas.ExpenseGroup]],
+)
+def get_expenses_group(by: str, _: str = Depends(oauth2.require_user)):
+    if by and by not in ["category", "type"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid filter. Must be of category, type.",
+        )
+    try:
+        expenses = models.Expense.query().all()
+        expenses = [jsonable_encoder(e) for e in expenses]
+
+        result = {}
+        for e in expenses:
+            temp = e.pop(by)
+            if by == "category":
+                temp = temp["name"]
+            if temp not in result:
+                result[temp] = []
+            result[temp].append(e)
+        return result
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
 
 
 @router.get(
