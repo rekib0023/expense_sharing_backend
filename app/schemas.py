@@ -22,10 +22,14 @@ class LoginUserSchema(BaseModel):
     password: constr(min_length=8)
 
 
-class UserResponse(UserBaseSchema):
+class MyBaseModel(BaseModel):
     id: int
     created_at: datetime
     updated_at: datetime = None
+
+
+class UserResponse(UserBaseSchema, MyBaseModel):
+    pass
 
 
 class CreateExpenseCategory(BaseModel):
@@ -41,15 +45,18 @@ class ExpenseCategory(CreateExpenseCategory):
 
 class ExpenseBase(BaseModel):
     name: str
-    type: Literal["Bank", "Card", "Cash"]
+    paid_by: Literal["Bank", "Card", "Cash"]
     amount: float
+    is_spend: Union[bool, None] = True
+    payment_date: datetime = None
+    other_details: str
 
 
 class CreateExpense(ExpenseBase):
     category_id: int
 
 
-class Expense(ExpenseBase):
+class Expense(ExpenseBase, MyBaseModel):
     id: int
     category: ExpenseCategory
 
@@ -59,5 +66,7 @@ class ExpenseGroup(BaseModel):
     name: str
     amount: float
     category: Union[ExpenseCategory, None]
-    type: Union[str, None]
-    # __root__: Union[str, ExpenseCategory]
+    paid_by: Union[str, None]
+    is_spend: bool
+    payment_date: datetime = None
+    other_details: str

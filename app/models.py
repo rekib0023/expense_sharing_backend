@@ -1,8 +1,18 @@
 import enum
 
-from sqlalchemy import Column, Enum, Float, ForeignKey, Integer, String
+from sqlalchemy import (
+    Column,
+    Enum,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    DateTime,
+    Boolean,
+)
 from sqlalchemy.ext.declarative import declarative_base, declared_attr
 from sqlalchemy.orm import relationship
+from sqlalchemy.sql import func
 
 from app.mixins import AuditMixin, BaseMixin
 
@@ -33,7 +43,7 @@ class ExpenseCategory(Base, AuditMixin, BaseMixin):
     name = Column(String, nullable=False)
 
 
-class PaymentTypeEnum(enum.Enum):
+class PaidByEnum(enum.Enum):
     Bank = "Bank"
     Card = "Card"
     Cash = "Cash"
@@ -41,9 +51,12 @@ class PaymentTypeEnum(enum.Enum):
 
 class Expense(Base, AuditMixin, BaseMixin):
     name = Column(String, nullable=False)
-    type = Column(Enum(PaymentTypeEnum), default=PaymentTypeEnum.Cash, nullable=False)
+    paid_by = Column(Enum(PaidByEnum), default=PaidByEnum.Cash, nullable=False)
     amount = Column(Float, default=0.0)
+    is_spend = Column(Boolean, default=True, nullable=False)
     category_id = Column(Integer, ForeignKey(ExpenseCategory.id))
+    payment_date = Column(DateTime(timezone=True))
+    other_details = Column(String, nullable=True)
 
     category = relationship(
         "ExpenseCategory", foreign_keys="Expense.category_id", lazy="joined"

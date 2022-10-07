@@ -89,10 +89,10 @@ def get_expenses(
     amount_lt: Union[int, None] = None,
     _: str = Depends(oauth2.require_user),
 ):
-    if type and type not in ["category", "type"]:
+    if type and type not in ["category", "paid_by"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid filter type. Must be of category, type.",
+            detail="Invalid filter type. Must be of category, paid_by.",
         )
     filters = []
 
@@ -138,10 +138,10 @@ def get_expenses(
     response_model=Dict[str, List[schemas.ExpenseGroup]],
 )
 def get_expenses_group(by: str, _: str = Depends(oauth2.require_user)):
-    if by and by not in ["category", "type"]:
+    if by and by not in ["category", "paid_by"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid filter. Must be of category, type.",
+            detail="Invalid filter. Must be of category, paid_by.",
         )
     try:
         expenses = models.Expense.query().all()
