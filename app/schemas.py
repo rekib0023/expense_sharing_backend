@@ -45,11 +45,11 @@ class ExpenseCategory(CreateExpenseCategory):
 
 class ExpenseBase(BaseModel):
     name: str
-    paid_by: Literal["Bank", "Card", "Cash"]
+    paid_by: Literal["Bank", "Card", "Cash"] = None
     amount: float
     is_spend: Union[bool, None] = True
     payment_date: datetime = None
-    other_details: str
+    other_details: str = None
 
 
 class CreateExpense(ExpenseBase):
@@ -61,7 +61,7 @@ class Expense(ExpenseBase, MyBaseModel):
     category: ExpenseCategory
 
 
-class ExpenseGroup(BaseModel):
+class ExpenseByGroup(BaseModel):
     id: int
     name: str
     amount: float
@@ -70,3 +70,10 @@ class ExpenseGroup(BaseModel):
     is_spend: bool
     payment_date: datetime = None
     other_details: str
+
+
+class CreateExpenseGroup(BaseModel):
+    name: str
+    desc: str
+    owner_id: int
+    group_user_ids: List[int]

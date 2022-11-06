@@ -1,10 +1,9 @@
-from fastapi import HTTPException
+from fastapi import HTTPException, Request
 from sqlalchemy import Column, DateTime, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-# from app.dependency import get_current_user\\
 from db import get_db
 
 db = next(get_db())
@@ -14,38 +13,44 @@ class AuditMixin(object):
     created_at = Column(DateTime(timezone=True), default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
-    # @declared_attr
-    # def created_by_id(cls):
-    #     return Column(Integer,
-    #         ForeignKey('user.id', name='fk_%s_created_by_id' % cls.__name__, use_alter=True),
-    #         # nullable=False,
-    #         default=_current_user_id_or_none
-    #     )
+    @declared_attr
+    def created_by_id(cls):
+        return Column(
+            Integer,
+            ForeignKey(
+                "user.id", name="fk_%s_created_by_id" % cls.__name__, use_alter=True
+            ),
+            # nullable=False,
+            default=_current_user_id_or_none,
+        )
 
-    # @declared_attr
-    # def created_by(cls):
-    #     return relationship(
-    #         'User',
-    #         primaryjoin='User.id == %s.created_by_id' % cls.__name__,
-    #         remote_side='User.id'
-    #     )
+    @declared_attr
+    def created_by(cls):
+        return relationship(
+            "User",
+            primaryjoin="User.id == %s.created_by_id" % cls.__name__,
+            remote_side="User.id",
+        )
 
-    # @declared_attr
-    # def updated_by_id(cls):
-    #     return Column(Integer,
-    #         ForeignKey('user.id', name='fk_%s_updated_by_id' % cls.__name__, use_alter=True),
-    #         # nullable=False,
-    #         default=_current_user_id_or_none,
-    #         onupdate=_current_user_id_or_none
-    #     )
+    @declared_attr
+    def updated_by_id(cls):
+        return Column(
+            Integer,
+            ForeignKey(
+                "user.id", name="fk_%s_updated_by_id" % cls.__name__, use_alter=True
+            ),
+            # nullable=False,
+            default=_current_user_id_or_none,
+            onupdate=_current_user_id_or_none,
+        )
 
-    # @declared_attr
-    # def updated_by(cls):
-    #     return relationship(
-    #         'User',
-    #         primaryjoin='User.id == %s.updated_by_id' % cls.__name__,
-    #         remote_side='User.id'
-    #     )
+    @declared_attr
+    def updated_by(cls):
+        return relationship(
+            "User",
+            primaryjoin="User.id == %s.updated_by_id" % cls.__name__,
+            remote_side="User.id",
+        )
 
 
 class BaseMixin(object):
@@ -111,8 +116,8 @@ class BaseMixin(object):
         return self.__str__()
 
 
-# async def _current_user_id_or_none():
-#     try:
-#         return await get_current_user().id
-#     except:
-#         return None
+async def _current_user_id_or_none(request: Request):
+    try:
+        return request.state.user_id
+    except:
+        return None

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 
 from app import oauth2, schemas, utils
 from app.config import settings
-from app.models import User
+from app.models.expense_model import User
 from app.oauth2 import AuthJWT
 
 router = APIRouter()

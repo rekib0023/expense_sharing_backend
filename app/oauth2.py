@@ -1,12 +1,12 @@
 import base64
 from typing import List
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Request, status
 from fastapi_jwt_auth import AuthJWT
 from pydantic import BaseModel
 
 from app.config import settings
-from app.models import User
+from app.models.user_model import User
 
 
 class Settings(BaseModel):
@@ -27,7 +27,10 @@ def get_config():
     return Settings()
 
 
-def require_user(Authorize: AuthJWT = Depends()):
+def require_user(
+    request: Request,
+    Authorize: AuthJWT = Depends(),
+):
     try:
         Authorize.jwt_required()
         user_id = Authorize.get_jwt_subject()
@@ -56,4 +59,4 @@ def require_user(Authorize: AuthJWT = Depends()):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Token is invalid or has expired",
         )
-    return user_id
+    request.state.user_id = user_id

@@ -1,12 +1,13 @@
 from typing import Dict, List, Union
-from sqlalchemy import and_
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi.encoders import jsonable_encoder
+from sqlalchemy import and_
 
-from .. import models, oauth2, schemas
+from .. import oauth2, schemas
+from ..models import expense_model
 
 router = APIRouter()
-from fastapi.encoders import jsonable_encoder
 
 
 @router.post(
@@ -15,11 +16,11 @@ from fastapi.encoders import jsonable_encoder
     status_code=status.HTTP_201_CREATED,
 )
 def create_category(
+    request: Request,
     payload: schemas.CreateExpenseCategory,
-    _: str = Depends(oauth2.require_user),
 ):
     try:
-        category = models.ExpenseCategory.create(**payload.dict())
+        category = expense_model.ExpenseCategory.create(**payload.dict())
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
@@ -33,9 +34,11 @@ def create_category(
     status_code=status.HTTP_200_OK,
     response_model=List[schemas.ExpenseCategory],
 )
-def get_categories(_: str = Depends(oauth2.require_user)):
+def get_categories(
+    request: Request,
+):
     try:
-        categories = models.ExpenseCategory.query().all()
+        categories = expense_model.ExpenseCategory.query().all()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
@@ -49,9 +52,12 @@ def get_categories(_: str = Depends(oauth2.require_user)):
     status_code=status.HTTP_200_OK,
     response_model=schemas.ExpenseCategory,
 )
-def get_category(id, _: str = Depends(oauth2.require_user)):
+def get_category(
+    request: Request,
+    id,
+):
     try:
-        category = models.ExpenseCategory.get(id)
+        category = expense_model.ExpenseCategory.get(id)
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
@@ -65,10 +71,12 @@ def get_category(id, _: str = Depends(oauth2.require_user)):
     status_code=status.HTTP_201_CREATED,
 )
 def create_expense(
-    payload: schemas.CreateExpense, _: str = Depends(oauth2.require_user)
+    request: Request,
+    payload: schemas.CreateExpense,
 ):
     try:
-        expense = models.Expense.create(**payload.dict())
+        payload.amount = (0 - payload.amount) if payload.is_spend else payload.amount
+        expense = expense_model.Expense.create(**payload.dict())
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
@@ -83,11 +91,11 @@ def create_expense(
     response_model=List[schemas.Expense],
 )
 def get_expenses(
+    request: Request,
     type: Union[str, None] = None,
     value: Union[str, None] = None,
     amount_gt: Union[int, None] = None,
     amount_lt: Union[int, None] = None,
-    _: str = Depends(oauth2.require_user),
 ):
     if type and type not in ["category", "paid_by"]:
         raise HTTPException(
@@ -97,7 +105,7 @@ def get_expenses(
     filters = []
 
     if type == "category":
-        category = models.ExpenseCategory.get_by(name=value)
+        category = expense_model.ExpenseCategory.get_by(name=value)
         if category:
             category_id = category.id
         else:
@@ -105,23 +113,33 @@ def get_expenses(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="No category found for the given filter",
             )
-        filters.append(models.Expense.category_id == category_id)
+        filters.append(expense_model.Expense.category_id == category_id)
     elif type == "type":
-        filters.append(models.Expense.type == value)
+        filters.append(expense_model.Expense.type == value)
 
     if amount_gt and amount_lt:
-        filters.append(models.Expense.amount >= amount_gt)
-        filters.append(models.Expense.amount <= amount_lt)
+        filters.append(expense_model.Expense.amount >= amount_gt)
+        filters.append(expense_model.Expense.amount <= amount_lt)
     elif amount_gt:
-        filters.append(models.Expense.amount >= amount_gt)
+        filters.append(expense_model.Expense.amount >= amount_gt)
     elif amount_lt:
-        filters.append(models.Expense.amount <= amount_lt)
+        filters.append(expense_model.Expense.amount <= amount_lt)
 
     try:
         if filters:
-            expenses = models.Expense.query().filter(and_(el for el in filters))
+            expenses = (
+                expense_model.Expense.query()
+                .filter(and_(el for el in filters))
+                .order_by(expense_model.Expense.payment_date.desc())
+            )
         else:
-            expenses = models.Expense.query().all()
+            expenses = (
+                expense_model.Expense.query().order_by(
+                    expense_model.Expense.payment_date.desc()
+                )
+                # .filter(models.Expense.cre)
+                .all()
+            )
 
         expenses = [jsonable_encoder(e) for e in expenses]
     except Exception as e:
@@ -131,20 +149,74 @@ def get_expenses(
     return expenses
 
 
+@router.delete(
+    "/{id}", summary="Delete an expense", status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_expense(
+    request: Request,
+    id,
+):
+    expense = expense_model.Expense.get(id)
+    if not expense:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Expense not found.",
+        )
+    try:
+        expense.delete()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+    return "Deleted successfully"
+
+
+@router.put("/{id}", summary="Update an expense", status_code=status.HTTP_200_OK)
+def update_expense(
+    request: Request,
+    id,
+    payload: schemas.CreateExpense,
+):
+    expense = expense_model.Expense.get(id)
+    if not expense:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Expense not found.",
+        )
+    try:
+        payload.amount = (0 - payload.amount) if payload.is_spend else payload.amount
+        expense.name = payload.name
+        expense.paid_by = payload.paid_by
+        expense.amount = payload.amount
+        expense.is_spend = payload.is_spend
+        expense.payment_date = payload.payment_date
+        expense.other_details = payload.other_details
+        expense.category_id = payload.category_id
+        expense.save()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+    return expense
+
+
 @router.get(
     "/group",
     summary="Get expenses in group",
     status_code=status.HTTP_200_OK,
-    response_model=Dict[str, List[schemas.ExpenseGroup]],
+    response_model=Dict[str, List[schemas.ExpenseByGroup]],
 )
-def get_expenses_group(by: str, _: str = Depends(oauth2.require_user)):
+def get_expenses_group(
+    request: Request,
+    by: str,
+):
     if by and by not in ["category", "paid_by"]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid filter. Must be of category, paid_by.",
         )
     try:
-        expenses = models.Expense.query().all()
+        expenses = expense_model.Expense.query().all()
         expenses = [jsonable_encoder(e) for e in expenses]
 
         result = {}
@@ -168,9 +240,17 @@ def get_expenses_group(by: str, _: str = Depends(oauth2.require_user)):
     status_code=status.HTTP_200_OK,
     response_model=schemas.Expense,
 )
-def get_expense(id, _: str = Depends(oauth2.require_user)):
+def get_expense(
+    request: Request,
+    id,
+):
+    expense = expense_model.Expense.get(id)
+    if not expense:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Expense not found.",
+        )
     try:
-        expense = models.Expense.get(id)
         expense = jsonable_encoder(expense)
     except Exception as e:
         raise HTTPException(
