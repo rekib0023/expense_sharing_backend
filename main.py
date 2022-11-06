@@ -7,6 +7,7 @@ from app.models import expense_model
 from app.oauth2 import require_user
 from app.routers import authentication, expense, user
 from db import engine
+from app.middlewares import CustomContextMiddleware
 
 expense_model.Base.metadata.create_all(bind=engine)
 
@@ -25,6 +26,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(CustomContextMiddleware)
 
 app.include_router(authentication.router, tags=["Auth"], prefix="/api/auth")
 app.include_router(

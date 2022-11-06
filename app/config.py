@@ -17,6 +17,8 @@ class Settings(BaseSettings):
 
     CLIENT_ORIGIN: str
 
+    DEBUG: bool
+
     class Config:
         env_file = "./.env"
 

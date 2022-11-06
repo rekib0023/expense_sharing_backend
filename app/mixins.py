@@ -3,6 +3,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
+from starlette_context import context
 
 from db import get_db
 
@@ -40,7 +41,7 @@ class AuditMixin(object):
                 "user.id", name="fk_%s_updated_by_id" % cls.__name__, use_alter=True
             ),
             # nullable=False,
-            default=_current_user_id_or_none,
+            # default=_current_user_id_or_none,
             onupdate=_current_user_id_or_none,
         )
 
@@ -116,8 +117,8 @@ class BaseMixin(object):
         return self.__str__()
 
 
-async def _current_user_id_or_none(request: Request):
+def _current_user_id_or_none(a):
     try:
-        return request.state.user_id
+        return context["user_id"]
     except:
         return None
