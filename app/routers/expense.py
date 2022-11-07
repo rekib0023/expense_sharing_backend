@@ -38,7 +38,13 @@ def get_categories(
     request: Request,
 ):
     try:
-        categories = expense_model.ExpenseCategory.query().all()
+        categories = (
+            expense_model.ExpenseCategory.query()
+            .filter(
+                expense_model.ExpenseCategory.created_by_id == request.state.user_id
+            )
+            .all()
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
@@ -57,7 +63,9 @@ def get_category(
     id,
 ):
     try:
-        category = expense_model.ExpenseCategory.get(id)
+        category = expense_model.ExpenseCategory.get_by(
+            id=id, created_by_id=request.state.user_id
+        )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
@@ -126,20 +134,13 @@ def get_expenses(
         filters.append(expense_model.Expense.amount <= amount_lt)
 
     try:
-        if filters:
-            expenses = (
-                expense_model.Expense.query()
-                .filter(and_(el for el in filters))
-                .order_by(expense_model.Expense.payment_date.desc())
-            )
-        else:
-            expenses = (
-                expense_model.Expense.query().order_by(
-                    expense_model.Expense.payment_date.desc()
-                )
-                # .filter(models.Expense.cre)
-                .all()
-            )
+        expenses = (
+            expense_model.Expense.query()
+            .filter(and_(el for el in filters))
+            .filter(expense_model.Expense.created_by_id == request.state.user_id)
+            .order_by(expense_model.Expense.payment_date.desc())
+            .all()
+        )
 
         expenses = [jsonable_encoder(e) for e in expenses]
     except Exception as e:
@@ -156,7 +157,7 @@ def delete_expense(
     request: Request,
     id,
 ):
-    expense = expense_model.Expense.get(id)
+    expense = expense_model.Expense.get_by(id=id, created_by_id=request.state.user_id)
     if not expense:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -177,7 +178,7 @@ def update_expense(
     id,
     payload: schemas.CreateExpense,
 ):
-    expense = expense_model.Expense.get(id)
+    expense = expense_model.Expense.get_by(id=id, created_by_id=request.state.user_id)
     if not expense:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -216,7 +217,11 @@ def get_expenses_group(
             detail="Invalid filter. Must be of category, paid_by.",
         )
     try:
-        expenses = expense_model.Expense.query().all()
+        expenses = (
+            expense_model.Expense.query()
+            .filter(expense_model.Expense.created_by_id == request.state.user_id)
+            .all()
+        )
         expenses = [jsonable_encoder(e) for e in expenses]
 
         result = {}
@@ -244,7 +249,7 @@ def get_expense(
     request: Request,
     id,
 ):
-    expense = expense_model.Expense.get(id)
+    expense = expense_model.Expense.get_by(id=id, created_by_id=request.state.user_id)
     if not expense:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
