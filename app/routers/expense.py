@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from fastapi.encoders import jsonable_encoder
 from sqlalchemy import and_
 
-from .. import oauth2, schemas
+from .. import schemas
 from ..models import expense_model
 
 router = APIRouter()
@@ -43,6 +43,7 @@ def get_categories(
             .filter(
                 expense_model.ExpenseCategory.created_by_id == request.state.user_id
             )
+            .order_by(expense_model.ExpenseCategory.created_at.desc())
             .all()
         )
     except Exception as e:
@@ -66,6 +67,67 @@ def get_category(
         category = expense_model.ExpenseCategory.get_by(
             id=id, created_by_id=request.state.user_id
         )
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+    return category
+
+
+@router.delete(
+    "/category/{id}",
+    summary="delete a category",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_category(
+    request: Request,
+    id,
+):
+    expense = expense_model.Expense.get_by(category_id=id)
+    if expense:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Category is referenced by expense {expense.name}",
+        )
+    category = expense_model.ExpenseCategory.get_by(
+        id=id, created_by_id=request.state.user_id
+    )
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found.",
+        )
+    try:
+        category.delete()
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
+        )
+    return "Deleted successfully"
+
+
+@router.put(
+    "/category/{id}",
+    summary="update a category",
+    status_code=status.HTTP_200_OK,
+    response_model=schemas.ExpenseCategory,
+)
+def update_category(
+    request: Request,
+    id,
+    payload: schemas.CreateExpenseCategory,
+):
+    category = expense_model.ExpenseCategory.get_by(
+        id=id, created_by_id=request.state.user_id
+    )
+    if not category:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Category not found.",
+        )
+    try:
+        category.name = payload.name
+        category.save()
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e)
@@ -113,7 +175,7 @@ def get_expenses(
     filters = []
 
     if type == "category":
-        category = expense_model.ExpenseCategory.get_by(name=value)
+        category = expense_model.ExpenseCategory.get(value)
         if category:
             category_id = category.id
         else:
@@ -122,8 +184,8 @@ def get_expenses(
                 detail="No category found for the given filter",
             )
         filters.append(expense_model.Expense.category_id == category_id)
-    elif type == "type":
-        filters.append(expense_model.Expense.type == value)
+    elif type == "paid_by":
+        filters.append(expense_model.Expense.paid_by == value)
 
     if amount_gt and amount_lt:
         filters.append(expense_model.Expense.amount >= amount_gt)
@@ -241,7 +303,7 @@ def get_expenses_group(
 
 @router.get(
     "/{id}",
-    summary="Get all expenses",
+    summary="Get a expenses",
     status_code=status.HTTP_200_OK,
     response_model=schemas.Expense,
 )

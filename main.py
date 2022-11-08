@@ -5,7 +5,7 @@ from fastapi.responses import RedirectResponse
 
 from app.models import expense_model
 from app.oauth2 import require_user
-from app.routers import authentication, expense, user
+from app.routers import authentication, expense, user, charts
 from db import engine
 from app.middlewares import CustomContextMiddleware
 
@@ -41,7 +41,12 @@ app.include_router(
     prefix="/api/expense",
     dependencies=[Depends(require_user)],
 )
-
+app.include_router(
+    charts.router,
+    tags=["Charts"],
+    prefix="/api/charts",
+    dependencies=[Depends(require_user)],
+)
 
 @app.get("/api/healthchecker")
 def root():
